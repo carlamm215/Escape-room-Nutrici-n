@@ -1,0 +1,636 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Nutri-Escape</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;700&display=swap">
+<style>
+/* Concepto: toda la pantalla es una etiqueta nutricional gigante. Cada estación es una fila de la etiqueta,
+   con reglas gruesas y tipografía condensada. Los colores del semáforo llevan el significado; el resto es tinta sobre papel. */
+:root{
+  --paper:#EEF3EA; --card:#FFFFFF; --ink:#10211A; --ink-2:#44584D; --rule:#10211A; --soft:#DCE7DA;
+  --green:#178746; --green-bg:#D8F1DF; --amber:#E9A400; --amber-bg:#FFEDB8; --red:#C6341F; --red-bg:#FADAD3;
+  --focus:#2A62F5; --btn-bg:#10211A; --btn-fg:#EEF3EA; --gold:#F2B705; --gold-fg:#10211A;
+  --f-display:'Barlow Condensed','Arial Narrow',Impact,sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1712; --card:#15241C; --ink:#EDF4EE; --ink-2:#A8BDAF; --rule:#EDF4EE; --soft:#223529;
+    --green:#43C57A; --green-bg:#173A27; --amber:#F5BE2E; --amber-bg:#443714; --red:#F0705D; --red-bg:#47201A;
+    --focus:#8FADFF; --btn-bg:#EDF4EE; --btn-fg:#0D1712; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1712; --card:#15241C; --ink:#EDF4EE; --ink-2:#A8BDAF; --rule:#EDF4EE; --soft:#223529;
+  --green:#43C57A; --green-bg:#173A27; --amber:#F5BE2E; --amber-bg:#443714; --red:#F0705D; --red-bg:#47201A;
+  --focus:#8FADFF; --btn-bg:#EDF4EE; --btn-fg:#0D1712; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.eyebrow{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.95rem;color:var(--ink-2)}
+
+/* Cabecera */
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:10px solid var(--rule);padding-bottom:10px}
+.top h1{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(2.6rem,9vw,4.4rem);line-height:.9;letter-spacing:-.01em}
+.meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0}
+.timer{font-family:var(--f-display);font-weight:700;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+#teamTag{font-weight:700;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.steps ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.steps li{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:1.05rem;
+  border-top:6px solid var(--soft);padding-top:4px;color:var(--ink-2)}
+.steps li.cur{border-top-color:var(--ink);color:var(--ink)}
+.steps li.done{border-top-color:var(--green);color:var(--green)}
+
+/* Mochila de pistas */
+.pack{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;border:3px solid var(--rule);background:var(--card);padding:10px 14px}
+.pack-g{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pack-l{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.tiles{display:flex;gap:5px}
+.tile{width:38px;height:46px;border:3px solid var(--rule);display:grid;place-items:center;background:var(--soft);
+  font-family:var(--f-display);font-weight:800;font-size:1.6rem;line-height:1;color:var(--ink-2)}
+.tile.on{background:var(--gold);color:var(--gold-fg);animation:flip .5s ease both}
+.tile.big{width:56px;height:68px;font-size:2.4rem}
+@keyframes flip{from{transform:rotateX(90deg)}to{transform:none}}
+
+/* Etiqueta */
+.label{background:var(--card);border:3px solid var(--rule);padding:14px 16px;min-width:0}
+.label h2,.label h3{font-family:var(--f-display);font-weight:800;text-transform:uppercase;line-height:1;border-bottom:8px solid var(--rule);padding-bottom:6px}
+.label h2{font-size:2.1rem}.label h3{font-size:1.6rem}
+.label .serv{font-weight:700;padding:6px 0;border-bottom:3px solid var(--rule)}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--rule)}
+.row b{font-variant-numeric:tabular-nums;text-align:right}
+.ing{padding-top:8px;font-size:.95rem}
+.story{padding:12px 0;font-size:1.1rem;max-width:62ch}
+.field{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px}
+.field label{font-weight:700}
+.field input{border:3px solid var(--rule);background:var(--paper);padding:10px 12px;border-radius:6px;max-width:380px}
+
+.btn{background:var(--btn-bg);color:var(--btn-fg);border:0;border-radius:6px;min-height:50px;padding:10px 24px;cursor:pointer;
+  font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:1.3rem}
+.btn:hover{filter:brightness(1.15)}
+.btn.ghost{background:transparent;color:var(--ink);border:3px solid var(--rule)}
+.btn.big{font-size:1.6rem;min-height:58px;padding-inline:32px}
+
+.st-head{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.st-head h2{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(1.9rem,6vw,2.8rem);line-height:1}
+.screen{display:block}
+
+/* Estación 1 */
+.s1-grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.s1-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}}
+.food{background:var(--card);border:3px solid var(--rule);padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:280px}
+.food-prog{align-self:stretch;display:flex;justify-content:space-between;font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}
+.food-emoji{font-size:clamp(4.5rem,16vw,7rem);line-height:1.1}
+.food-name{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(1.7rem,5vw,2.4rem);line-height:1}
+.food.pop{animation:pop .35s ease}
+.food.shake{animation:shake .4s ease}
+@keyframes pop{50%{transform:scale(1.04)}}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.bins{display:flex;flex-direction:column;gap:10px}
+.bin{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;text-align:left;padding:12px 14px;
+  background:var(--card);border:3px solid var(--rule);border-radius:8px;cursor:pointer;min-height:84px}
+.bin[data-cat="g"]{--c:var(--green);--bg:var(--green-bg)}
+.bin[data-cat="y"]{--c:var(--amber);--bg:var(--amber-bg)}
+.bin[data-cat="r"]{--c:var(--red);--bg:var(--red-bg)}
+.bin:hover:not(:disabled){background:var(--bg)}
+.bin:disabled{cursor:default;opacity:.7}
+.light{width:48px;height:48px;border-radius:50%;background:var(--c);border:3px solid var(--rule)}
+.bin-t{display:block;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:1.6rem;line-height:1}
+.bin-s{display:block;font-size:.95rem;color:var(--ink-2)}
+.caps{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:112px}
+.cap{width:15px;height:15px;border-radius:50%;border:2px solid var(--c);background:transparent}
+.cap.on{background:var(--c)}
+
+.feedback{margin-top:16px;border:3px solid var(--rule);padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.feedback p{flex:1 1 280px;min-width:0}
+.feedback.ok{background:var(--green-bg)}
+.feedback.bad{background:var(--red-bg)}
+
+/* Estación 2 */
+.labels{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));margin-bottom:14px}
+.question{font-family:var(--f-display);font-weight:700;font-size:clamp(1.4rem,4.2vw,1.9rem);line-height:1.1;margin-bottom:12px;max-width:44ch;text-wrap:balance}
+.opts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.opt{text-align:left;background:var(--card);border:3px solid var(--rule);border-radius:8px;padding:14px;cursor:pointer;min-height:64px;font-size:1.05rem}
+.opt strong{font-family:var(--f-display);font-size:1.4rem;text-transform:uppercase}
+.opt:hover:not(:disabled){background:var(--soft)}
+.opt.ok{background:var(--green-bg);border-color:var(--green)}
+.opt.bad{background:var(--red-bg);border-color:var(--red);text-decoration:line-through}
+.opt:disabled{cursor:default}
+
+/* Pista, cerradura y final */
+.center{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.lock{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:760px){.lock{grid-template-columns:auto minmax(0,1fr)}}
+.padlock{width:120px;height:140px;color:var(--ink);justify-self:center}
+.riddle{display:flex;flex-direction:column;gap:8px;padding:10px 0}
+.riddle p{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.code-in{width:100%;max-width:420px;border:4px solid var(--rule);background:var(--paper);padding:12px 14px;border-radius:6px;
+  font-family:var(--f-display);font-weight:800;font-size:2rem;letter-spacing:.14em;text-transform:uppercase}
+.lock-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.msg{min-height:1.5em;font-weight:700}
+.msg.bad{color:var(--red)}
+.code{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.stars{font-size:2rem;color:var(--gold);letter-spacing:.2em}
+.win-rows{width:100%;max-width:420px;text-align:left}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Escape room · Alimentación equilibrada · 5.º de Primaria</p>
+      <h1>Nutri-Escape</h1>
+    </div>
+    <div class="meta">
+      <div class="timer" id="timer" aria-label="Tiempo">00:00</div>
+      <div id="teamTag"></div>
+    </div>
+  </header>
+
+  <nav class="steps" aria-label="Progreso">
+    <ol>
+      <li id="st1">1 · Semáforo</li>
+      <li id="st2">2 · Detective</li>
+      <li id="st3">3 · Cerradura</li>
+    </ol>
+  </nav>
+
+  <section class="pack" aria-label="Mochila de pistas">
+    <div class="pack-g"><span class="pack-l">Pista 1</span><div class="tiles" id="tiles1"></div></div>
+    <div class="pack-g"><span class="pack-l">Pista 2</span><div class="tiles" id="tiles2"></div></div>
+  </section>
+
+  <main>
+    <!-- Intro -->
+    <section id="s-intro" class="screen">
+      <div class="label">
+        <h2>Información de la misión</h2>
+        <p class="serv">Raciones por equipo: 1</p>
+        <div class="rows">
+          <div class="row"><span>Pruebas</span><b>2 juegos y 1 cerradura</b></div>
+          <div class="row"><span>Duración</span><b>10 a 15 minutos</b></div>
+          <div class="row"><span>Nivel</span><b>5.º de Primaria</b></div>
+          <div class="row"><span>Código final</span><b>11 letras</b></div>
+        </div>
+        <p class="story">La puerta del comedor se ha cerrado con un candado de letras. Para abrirlo necesitáis un código. Cada juego os da una pista, pero solo la consigue quien sabe elegir bien lo que come. Trabajad juntos, leed las etiquetas con calma y no os fiéis de los envases.</p>
+        <div class="field">
+          <label for="teamName">Nombre del equipo</label>
+          <input id="teamName" maxlength="24" placeholder="Los Tapones Valientes" autocomplete="off">
+        </div>
+        <button class="btn big" id="btnStart" type="button">Empezar la misión</button>
+      </div>
+    </section>
+
+    <!-- Estación 1 -->
+    <section id="s-1" class="screen" hidden>
+      <div class="st-head">
+        <p class="eyebrow">Prueba 1 · ¿Sabemos qué alimentos nos hacen bien?</p>
+        <h2>El Gran Semáforo de la Nutrición</h2>
+        <p>Mira el alimento y toca el color del semáforo donde lo pondrías. Los que fallas vuelven a salir.</p>
+      </div>
+      <div class="s1-grid">
+        <div class="food" id="foodCard">
+          <div class="food-prog"><span id="foodProg">Alimento 1 de 14</span><span id="foodErr">Fallos: 0</span></div>
+          <div class="food-emoji" id="foodEmoji" aria-hidden="true"></div>
+          <div class="food-name" id="foodName"></div>
+        </div>
+        <div class="bins" id="bins">
+          <button class="bin" type="button" data-cat="g">
+            <span class="light"></span>
+            <span><span class="bin-t">Verde</span><span class="bin-s">Naturales, la base de tu dieta</span></span>
+            <span class="caps" id="caps-g"></span>
+          </button>
+          <button class="bin" type="button" data-cat="y">
+            <span class="light"></span>
+            <span><span class="bin-t">Amarillo</span><span class="bin-s">Con moderación</span></span>
+            <span class="caps" id="caps-y"></span>
+          </button>
+          <button class="bin" type="button" data-cat="r">
+            <span class="light"></span>
+            <span><span class="bin-t">Rojo</span><span class="bin-s">Solo de vez en cuando</span></span>
+            <span class="caps" id="caps-r"></span>
+          </button>
+        </div>
+      </div>
+      <div class="feedback" id="fb1" role="status" aria-live="polite" hidden>
+        <p id="fb1Text"></p>
+        <button class="btn" id="btnNext1" type="button">Siguiente</button>
+      </div>
+    </section>
+
+    <!-- Estación 2 -->
+    <section id="s-2" class="screen" hidden>
+      <div class="st-head">
+        <p class="eyebrow" id="r-count">Prueba 2 · Detective de etiquetas</p>
+        <h2 id="r-title">Detective de etiquetas</h2>
+      </div>
+      <div class="labels" id="r-labels"></div>
+      <p class="question" id="r-q"></p>
+      <div class="opts" id="r-opts"></div>
+      <div class="feedback" id="fb2" role="status" aria-live="polite" hidden>
+        <p id="fb2Text"></p>
+        <button class="btn" id="btnNext2" type="button" hidden>Siguiente</button>
+      </div>
+    </section>
+
+    <!-- Pista conseguida -->
+    <section id="s-clue" class="screen" hidden>
+      <div class="label center">
+        <p class="eyebrow" id="c-eyebrow"></p>
+        <h2 id="c-title"></h2>
+        <div class="tiles" id="c-tiles"></div>
+        <p id="c-text" class="story"></p>
+        <button class="btn big" id="btnClue" type="button"></button>
+      </div>
+    </section>
+
+    <!-- Cerradura -->
+    <section id="s-3" class="screen" hidden>
+      <div class="st-head">
+        <p class="eyebrow">Prueba final</p>
+        <h2>La cerradura</h2>
+        <p>Ordenad las letras de las dos pistas y escribid el código. Son dos palabras.</p>
+      </div>
+      <div class="label lock">
+        <svg class="padlock" viewBox="0 0 120 140" aria-hidden="true">
+          <path d="M30 62V42a30 30 0 0 1 60 0v20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+          <rect x="12" y="62" width="96" height="70" rx="8" fill="currentColor"/>
+          <circle cx="60" cy="90" r="9" fill="var(--card)"/>
+          <rect x="56" y="94" width="8" height="18" rx="3" fill="var(--card)"/>
+        </svg>
+        <div>
+          <div class="riddle">
+            <p><b>Palabra 1:</b> <span class="tiles" id="rd1"></span> Es lo que tu cuerpo saca de la comida.</p>
+            <p><b>Palabra 2:</b> <span class="tiles" id="rd2"></span> Lo que se busca en una sala cerrada.</p>
+            <p id="helpText" hidden><b>Ayuda:</b> la primera palabra empieza por N y acaba en I. La segunda empieza por E y acaba en E.</p>
+          </div>
+          <input class="code-in" id="codeIn" type="text" maxlength="14" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="_____-______" aria-label="Código de la cerradura">
+          <div class="lock-row" style="margin-top:12px">
+            <button class="btn big" id="btnOpen" type="button">Abrir la cerradura</button>
+            <button class="btn ghost" id="btnHelp" type="button">Necesito ayuda</button>
+          </div>
+          <p class="msg" id="lockMsg" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final -->
+    <section id="s-4" class="screen" hidden>
+      <div class="label center">
+        <p class="eyebrow">Misión cumplida</p>
+        <h2 id="w-title">Cerradura abierta</h2>
+        <p class="story">Habéis descifrado el código final. Este es vuestro código:</p>
+        <div class="code" id="w-code" aria-label="Código NUTRI-ESCAPE"></div>
+        <div class="stars" id="w-stars" aria-hidden="true"></div>
+        <div class="rows win-rows">
+          <div class="row"><span>Tiempo</span><b id="w-time"></b></div>
+          <div class="row"><span>Fallos en el semáforo</span><b id="w-e1"></b></div>
+          <div class="row"><span>Fallos en el detective</span><b id="w-e2"></b></div>
+        </div>
+        <p class="story" id="w-msg"></p>
+        <div class="lock-row" style="justify-content:center">
+          <button class="btn" id="btnCopy" type="button">Copiar código</button>
+          <button class="btn ghost" id="btnAgain" type="button">Jugar otra vez</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s){ return document.querySelector(s); };
+var SCR1 = 'RNIUT', SCR2 = 'SPECEA', ANSWER = 'NUTRIESCAPE';
+var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var NAMES = { g:'verde', y:'amarillo', r:'rojo' };
+
+var FOODS = [
+  {n:'Manzana', e:'🍎', c:'g', w:'Fruta fresca. La fruta y la verdura van todos los días.'},
+  {n:'Brócoli', e:'🥦', c:'g', w:'Verdura fresca, llena de vitaminas. Muy buena para cada día.'},
+  {n:'Lentejas con verduras', e:'🍲', c:'g', w:'Legumbres con verduras: un plato natural y completo.'},
+  {n:'Agua', e:'💧', c:'g', w:'La mejor bebida. No lleva azúcar ni nada añadido.'},
+  {n:'Frutos secos sin sal', e:'🥜', c:'g', w:'Naturales, sin sal ni azúcar añadidos. Un puñado pequeño sienta genial.'},
+  {n:'Queso', e:'🧀', c:'y', w:'Da calcio y proteínas, pero lleva bastante sal y grasa. Con moderación.'},
+  {n:'Pasta blanca', e:'🍝', c:'y', w:'Da energía, pero conviene no pasarse con la ración. Mejor si es integral.'},
+  {n:'Huevos', e:'🥚', c:'y', w:'Muy completos, pero no hace falta comerlos todos los días.'},
+  {n:'Pollo a la plancha', e:'🍗', c:'y', w:'Buena proteína. Se come varias veces por semana, no en todas las comidas.'},
+  {n:'Refresco de cola', e:'🥤', c:'r', w:'Un vaso lleva unos 5 terrones de azúcar. Mejor agua.'},
+  {n:'Patatas fritas de bolsa', e:'🍟', c:'r', w:'Mucha sal y mucha grasa. Es un ultraprocesado.'},
+  {n:'Bollería industrial', e:'🥐', c:'r', w:'Azúcares añadidos y grasas poco sanas. Solo de vez en cuando.'},
+  {n:'Cereales de chocolate', e:'🥣', c:'r', w:'Llevan muchos azúcares añadidos. Es un ultraprocesado.'},
+  {n:'Salchichas', e:'🌭', c:'r', w:'Embutido ultraprocesado con mucha sal y aditivos.'}
+];
+var CAPS = { g:5, y:4, r:5 };
+
+var ROUNDS = [
+  { title:'Terrones escondidos',
+    labels:[{name:'Cereales de chocolate', serving:'Un bol: 40 g', rows:[['Azúcares','30 g por 100 g'],['Sal','0,5 g por 100 g']], ing:'Cereales (trigo, maíz), azúcar, cacao, jarabe de glucosa, sal, aroma.'}],
+    q:'Un terrón de azúcar pesa 4 g. ¿Cuántos terrones hay en un bol de 40 g de estos cereales?',
+    opts:['7 terrones','3 terrones','12 terrones'], ans:1,
+    hint:'Si 100 g llevan 30 g de azúcar, 10 g llevan 3 g. Un bol son 4 veces 10 g.',
+    why:'10 g de cereales llevan 3 g de azúcar, así que 40 g llevan 12 g. Y 12 g entre 4 g son 3 terrones.' },
+  { title:'Terrones escondidos',
+    labels:[{name:'Refresco de cola', serving:'Un vaso: 200 ml', rows:[['Azúcares','10 g por 100 ml']], ing:'Agua con gas, azúcar, colorante E-150d, acidulante, aroma.'}],
+    q:'Un terrón pesa 4 g. ¿Cuántos terrones de azúcar hay en un vaso de 200 ml?',
+    opts:['2 terrones','10 terrones','5 terrones'], ans:2,
+    hint:'200 ml son dos veces 100 ml. Calcula primero los gramos de azúcar del vaso.',
+    why:'200 ml son dos veces 100 ml, así que hay 20 g de azúcar. Y 20 g entre 4 g son 5 terrones.' },
+  { title:'La sal que no se ve',
+    labels:[{name:'Patatas fritas de bolsa', serving:'Una bolsa: 50 g', rows:[['Sal','3 g por 100 g']], ing:'Patatas, aceite de girasol, sal, aroma, potenciador del sabor E-621.'}],
+    q:'¿Cuántos gramos de sal te tomas si te comes la bolsa entera de 50 g?',
+    opts:['1,5 g','3 g','15 g'], ans:0,
+    hint:'50 g es justo la mitad de 100 g.',
+    why:'Si 100 g llevan 3 g de sal, 50 g llevan la mitad: 1,5 g. Se aconseja no pasar de unos 5 g de sal al día, y menos todavía en niños y niñas. Esta bolsa ya es cerca de un tercio.' },
+  { title:'Ingredientes de verdad',
+    labels:[],
+    q:'Tres botes de tomate frito. ¿Cuál tiene los ingredientes más naturales?',
+    opts:[
+      '<strong>Bote A</strong><br>Tomate, azúcar, almidón modificado, aroma, colorante E-160c, potenciador del sabor E-621.',
+      '<strong>Bote B</strong><br>Agua, concentrado de tomate, jarabe de glucosa, espesante E-415, acidulante E-330, aroma.',
+      '<strong>Bote C</strong><br>Tomate, aceite de oliva, sal.'
+    ], ans:2,
+    hint:'Fíjate en la lista: pocos ingredientes y todos los reconoces como comida de tu cocina.',
+    why:'El bote C solo lleva ingredientes que usarías en casa. Las listas largas, con letras y números como E-621, suelen ser de ultraprocesados.' },
+  { title:'Natural contra sabores',
+    labels:[
+      {name:'Yogur natural', serving:'Por 100 g', rows:[['Azúcares','4,5 g']], ing:'Leche, fermentos lácticos.'},
+      {name:'Yogur de fresa', serving:'Por 100 g', rows:[['Azúcares','13 g']], ing:'Leche, azúcar, preparado de fresa (4 %), almidón, aroma, colorante.'}
+    ],
+    q:'¿Cuántos gramos de azúcar más por cada 100 g lleva el yogur de fresa?',
+    opts:['17,5 g más','8,5 g más','9,5 g más'], ans:1,
+    hint:'Resta los dos números: 13 menos 4,5.',
+    why:'13 − 4,5 = 8,5 g más. El azúcar del natural viene de la propia leche. La diferencia son, sobre todo, azúcares añadidos.' },
+  { title:'El azúcar y sus disfraces',
+    labels:[{name:'Galletas rellenas', serving:'Mira solo los ingredientes', rows:[['Azúcares','35 g por 100 g']], ing:'Harina de trigo, azúcar, jarabe de glucosa-fructosa, aceite de palma, dextrosa, concentrado de zumo de manzana, sal, aroma.'}],
+    q:'El azúcar se esconde con otros nombres: azúcar, jarabes, dextrosa, concentrados de zumo. ¿Cuántos hay en esta lista?',
+    opts:['2','4','6'], ans:1,
+    hint:'Cuéntalos uno a uno. Los jarabes y los concentrados de zumo también cuentan.',
+    why:'Hay cuatro: azúcar, jarabe de glucosa-fructosa, dextrosa y concentrado de zumo de manzana. Cuando salen varios, el azúcar suma más de lo que parece.' }
+];
+
+var S = {};
+function shuffle(a){ a = a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function pad(n){ return (n<10?'0':'')+n; }
+function fmt(s){ return pad(Math.floor(s/60))+':'+pad(s%60); }
+
+function show(id, step){
+  var list = document.querySelectorAll('.screen');
+  for (var i=0;i<list.length;i++){ list[i].hidden = (list[i].id !== id); }
+  ['st1','st2','st3'].forEach(function(k,i){
+    var el = $('#'+k);
+    el.className = (step === i+1) ? 'cur' : (step > i+1 ? 'done' : '');
+  });
+  window.scrollTo(0,0);
+}
+
+function buildTiles(el, n, big){
+  el.innerHTML = '';
+  for (var i=0;i<n;i++){
+    var t = document.createElement('span');
+    t.className = 'tile' + (big?' big':'');
+    t.textContent = '?';
+    el.appendChild(t);
+  }
+}
+function revealTiles(el, letters){
+  var tiles = el.children;
+  for (var i=0;i<letters.length;i++){
+    (function(i){
+      var go = function(){ tiles[i].textContent = letters[i]; tiles[i].classList.add('on'); };
+      if (reduce) go(); else setTimeout(go, i*220);
+    })(i);
+  }
+}
+function buildCaps(){
+  ['g','y','r'].forEach(function(k){
+    var el = $('#caps-'+k); el.innerHTML = '';
+    for (var i=0;i<CAPS[k];i++){ var c=document.createElement('span'); c.className='cap'; el.appendChild(c); }
+  });
+}
+function fillCaps(k, n){
+  var caps = $('#caps-'+k).children;
+  for (var i=0;i<caps.length;i++){ caps[i].classList.toggle('on', i<n); }
+}
+
+function resetAll(){
+  if (S.timer) clearInterval(S.timer);
+  S = { q:[], done:0, err1:0, err2:0, r:0, cur:null, locked:false, counts:{g:0,y:0,r:0}, t0:0, timer:null, next:null, team:'' };
+  buildTiles($('#tiles1'), 5); buildTiles($('#tiles2'), 6);
+  buildCaps();
+  $('#timer').textContent = '00:00';
+  $('#teamTag').textContent = '';
+  $('#codeIn').value = '';
+  $('#lockMsg').textContent = ''; $('#lockMsg').className = 'msg';
+  $('#helpText').hidden = true;
+  show('s-intro', 0);
+}
+
+function startGame(){
+  S.team = $('#teamName').value.trim();
+  $('#teamTag').textContent = S.team;
+  S.t0 = Date.now();
+  S.timer = setInterval(function(){ $('#timer').textContent = fmt(Math.floor((Date.now()-S.t0)/1000)); }, 500);
+  startStation1();
+}
+
+/* Estación 1 */
+function startStation1(){
+  S.q = shuffle(FOODS); S.done = 0; S.err1 = 0; S.counts = {g:0,y:0,r:0};
+  buildCaps();
+  show('s-1', 1);
+  renderFood();
+}
+function renderFood(){
+  if (!S.q.length){ return showClue(1); }
+  S.cur = S.q[0]; S.locked = false;
+  $('#foodEmoji').textContent = S.cur.e;
+  $('#foodName').textContent = S.cur.n;
+  $('#foodProg').textContent = 'Alimento ' + (S.done+1) + ' de ' + FOODS.length;
+  $('#foodErr').textContent = 'Fallos: ' + S.err1;
+  $('#fb1').hidden = true;
+  var b = document.querySelectorAll('#bins .bin');
+  for (var i=0;i<b.length;i++){ b[i].disabled = false; }
+}
+function answer1(cat){
+  if (S.locked) return;
+  S.locked = true;
+  var card = $('#foodCard'), fb = $('#fb1');
+  card.classList.remove('pop','shake'); void card.offsetWidth;
+  var b = document.querySelectorAll('#bins .bin');
+  for (var i=0;i<b.length;i++){ b[i].disabled = true; }
+  if (cat === S.cur.c){
+    S.done++; S.counts[cat]++; fillCaps(cat, S.counts[cat]);
+    S.q.shift();
+    fb.className = 'feedback ok';
+    $('#fb1Text').textContent = '¡Correcto! ' + S.cur.w;
+    card.classList.add('pop');
+  } else {
+    S.err1++;
+    S.q.push(S.q.shift());
+    fb.className = 'feedback bad';
+    $('#fb1Text').textContent = 'Casi. ' + S.cur.n + ' va en el semáforo ' + NAMES[S.cur.c] + '. ' + S.cur.w + ' Volverá a salir más tarde.';
+    card.classList.add('shake');
+  }
+  $('#foodErr').textContent = 'Fallos: ' + S.err1;
+  fb.hidden = false;
+  $('#btnNext1').focus();
+}
+
+/* Pista */
+function showClue(n){
+  show('s-clue', n);
+  var letters = n===1 ? SCR1 : SCR2;
+  $('#c-eyebrow').textContent = 'Prueba ' + n + ' superada';
+  $('#c-title').textContent = 'Pista ' + n + ' conseguida';
+  $('#c-text').textContent = n===1
+    ? 'Son las 5 letras de la primera palabra del código. Están mezcladas. Quedan guardadas en la mochila de pistas.'
+    : 'Son las 6 letras de la segunda palabra del código. También están mezcladas. Ya tenéis las dos pistas.';
+  $('#btnClue').textContent = n===1 ? 'Ir a la prueba 2' : 'Ir a la cerradura';
+  S.next = n===1 ? startStation2 : startFinal;
+  buildTiles($('#c-tiles'), letters.length, true);
+  revealTiles($('#c-tiles'), letters);
+  revealTiles($('#tiles'+n), letters);
+}
+
+/* Estación 2 */
+function startStation2(){
+  S.r = 0; S.err2 = 0;
+  show('s-2', 2);
+  renderRound();
+}
+function labelHTML(p){
+  var h = '<div class="label"><h3>' + p.name + '</h3>';
+  if (p.serving) h += '<p class="serv">' + p.serving + '</p>';
+  h += '<div class="rows">';
+  for (var i=0;i<p.rows.length;i++){ h += '<div class="row"><span>' + p.rows[i][0] + '</span><b>' + p.rows[i][1] + '</b></div>'; }
+  h += '</div>';
+  if (p.ing) h += '<p class="ing"><b>Ingredientes:</b> ' + p.ing + '</p>';
+  return h + '</div>';
+}
+function renderRound(){
+  var R = ROUNDS[S.r];
+  $('#r-count').textContent = 'Prueba 2 · Detective de etiquetas · ' + (S.r+1) + ' de ' + ROUNDS.length;
+  $('#r-title').textContent = R.title;
+  $('#r-labels').innerHTML = R.labels.map(labelHTML).join('');
+  $('#r-labels').hidden = !R.labels.length;
+  $('#r-q').textContent = R.q;
+  var o = $('#r-opts'); o.innerHTML = '';
+  R.opts.forEach(function(t,i){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'opt'; b.setAttribute('data-i', i);
+    b.innerHTML = t;
+    o.appendChild(b);
+  });
+  $('#fb2').hidden = true; $('#btnNext2').hidden = true;
+}
+function answer2(i){
+  var R = ROUNDS[S.r];
+  var btns = document.querySelectorAll('#r-opts .opt');
+  var fb = $('#fb2');
+  if (i === R.ans){
+    for (var k=0;k<btns.length;k++){ btns[k].disabled = true; }
+    btns[i].classList.add('ok');
+    fb.className = 'feedback ok';
+    $('#fb2Text').textContent = '¡Correcto! ' + R.why;
+    $('#btnNext2').hidden = false;
+    fb.hidden = false;
+    $('#btnNext2').focus();
+  } else {
+    S.err2++;
+    btns[i].classList.add('bad'); btns[i].disabled = true;
+    fb.className = 'feedback bad';
+    $('#fb2Text').textContent = 'Todavía no. Pista: ' + R.hint;
+    $('#btnNext2').hidden = true;
+    fb.hidden = false;
+  }
+}
+function next2(){
+  S.r++;
+  if (S.r >= ROUNDS.length) return showClue(2);
+  renderRound();
+  window.scrollTo(0,0);
+}
+
+/* Cerradura */
+function startFinal(){
+  show('s-3', 3);
+  buildTiles($('#rd1'), 5); buildTiles($('#rd2'), 6);
+  Array.prototype.forEach.call($('#rd1').children, function(t,i){ t.textContent = SCR1[i]; t.classList.add('on'); });
+  Array.prototype.forEach.call($('#rd2').children, function(t,i){ t.textContent = SCR2[i]; t.classList.add('on'); });
+  $('#codeIn').focus();
+}
+function norm(s){
+  return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
+}
+function tryOpen(){
+  var v = norm($('#codeIn').value), m = $('#lockMsg');
+  if (v === ANSWER){ return win(); }
+  m.className = 'msg bad';
+  if (!v) m.textContent = 'Escribid el código antes de abrir.';
+  else if (v.length !== ANSWER.length) m.textContent = 'El código tiene 11 letras: 5 de la primera palabra y 6 de la segunda.';
+  else m.textContent = 'No se abre. Probad a ordenar las letras otra vez, palabra por palabra.';
+}
+
+/* Final */
+function win(){
+  if (S.timer){ clearInterval(S.timer); S.timer = null; }
+  var secs = Math.floor((Date.now()-S.t0)/1000);
+  var errs = S.err1 + S.err2;
+  var stars = errs <= 3 ? 3 : (errs <= 8 ? 2 : 1);
+  show('s-4', 4);
+  $('#w-title').textContent = S.team ? '¡Cerradura abierta, ' + S.team + '!' : '¡Cerradura abierta!';
+  var c = $('#w-code'); c.innerHTML = '';
+  'NUTRI-ESCAPE'.split('').forEach(function(ch,i){
+    var t = document.createElement('span');
+    t.className = 'tile big' + (ch==='-' ? '' : ' on');
+    t.textContent = ch;
+    if (ch==='-') t.style.background = 'transparent', t.style.borderColor = 'transparent';
+    else if (!reduce) t.style.animationDelay = (i*80)+'ms';
+    c.appendChild(t);
+  });
+  $('#w-stars').textContent = new Array(stars+1).join('★') + new Array(4-stars).join('☆');
+  $('#w-time').textContent = fmt(secs);
+  $('#w-e1').textContent = S.err1;
+  $('#w-e2').textContent = S.err2;
+  $('#w-msg').textContent = stars===3 ? 'Ojo clínico de nutricionistas. Casi sin fallos.'
+    : (stars===2 ? 'Muy buen trabajo. Con otra partida os saldría limpia.' : 'Lo habéis logrado y habéis aprendido por el camino. Probad otra vez para mejorar.');
+}
+function copyCode(){
+  var b = $('#btnCopy');
+  var ok = function(){ b.textContent = 'Copiado'; setTimeout(function(){ b.textContent = 'Copiar código'; }, 1800); };
+  var fail = function(){ b.textContent = 'Anotad el código'; setTimeout(function(){ b.textContent = 'Copiar código'; }, 2200); };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText('NUTRI-ESCAPE').then(ok, fail); }
+    else fail();
+  } catch(e){ fail(); }
+}
+
+/* Eventos */
+$('#btnStart').addEventListener('click', startGame);
+$('#bins').addEventListener('click', function(e){
+  var b = e.target.closest('.bin'); if (b && !b.disabled) answer1(b.getAttribute('data-cat'));
+});
+$('#btnNext1').addEventListener('click', renderFood);
+$('#r-opts').addEventListener('click', function(e){
+  var b = e.target.closest('.opt'); if (b && !b.disabled) answer2(parseInt(b.getAttribute('data-i'),10));
+});
+$('#btnNext2').addEventListener('click', next2);
+$('#btnClue').addEventListener('click', function(){ if (S.next) S.next(); });
+$('#btnOpen').addEventListener('click', tryOpen);
+$('#codeIn').addEventListener('keydown', function(e){ if (e.key === 'Enter') tryOpen(); });
+$('#btnHelp').addEventListener('click', function(){ $('#helpText').hidden = false; });
+$('#btnCopy').addEventListener('click', copyCode);
+$('#btnAgain').addEventListener('click', resetAll);
+
+resetAll();
+})();
+</script>
+
+</body></html>
